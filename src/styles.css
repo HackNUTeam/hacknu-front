@@ -5,3 +5,15 @@ body,
     margin: 0;
     padding: 0;
 }
+
+#card {
+    height: auto;
+    width: auto;
+    position: absolute;
+    top:50px;
+    left:50px;
+    display: flex;
+    justify-content: space-around;
+    background-color: white;
+    padding: 10px 10px 10px 10px;
+}

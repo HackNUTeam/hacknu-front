@@ -1,9 +1,8 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Loader } from '@googlemaps/js-api-loader';
-
 const apiOptions = {
-    "apiKey": "AIzaSyBHiUAtpqxTupKHUJTal9qfG_Z8DKvLPOQ",
+    "apiKey": "AIzaSyAtbzvL0S6HVXlBEKMFPE3ZEvx5CxRpHcQ",
     "version": "beta"
 };
 
@@ -18,8 +17,14 @@ const mapOptions = {
 async function initMap() {
     const mapDiv = document.getElementById("map");
     const apiLoader = new Loader(apiOptions);
+    
     await apiLoader.load();
     return new google.maps.Map(mapDiv, mapOptions);
+}
+async function initGeocoder() {
+  const apiLoader = new Loader(apiOptions);
+  await apiLoader.load();
+  return new google.maps.Geocoder();
 }
 
 async function initWebGLOverlayView(map) {
@@ -113,5 +118,38 @@ async function initWebGLOverlayView(map) {
 
 (async() => {
     const map = await initMap();
+    const geocoder = await initGeocoder(map)
+    const infowindow = new google.maps.InfoWindow();
+    geocodeLatLng(geocoder, map, infowindow);
     initWebGLOverlayView(map);
 })();
+
+function geocodeLatLng(
+  geocoder,
+  map,
+  infowindow
+) {
+  const latlng = {
+    lat: 33.8004048,
+    lng: -118.3890381,
+  };
+
+  geocoder
+    .geocode({ location: latlng})
+    .then((response) => {
+      if (response.results[0]) {
+        map.setZoom(11);
+
+        const marker = new google.maps.Marker({
+          position: latlng,
+          map: map,
+        });
+        document.getElementById("place").innerHTML = response.results[0].formatted_address;
+        infowindow.setContent(response.results[0].formatted_address);
+        infowindow.open(map, marker);
+      } else {
+        window.alert("No results found");
+      }
+    })
+    .catch((e) => window.alert("Geocoder failed due to: " + e));
+}
