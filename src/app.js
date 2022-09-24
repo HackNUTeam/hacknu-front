@@ -16,7 +16,7 @@ let selectedUser;
 var current = 0;
 
 var selectedDot = 0;
-var historySlider;
+
 
 const apiOptions = {
     "apiKey": "AIzaSyBHiUAtpqxTupKHUJTal9qfG_Z8DKvLPOQ",
@@ -39,14 +39,9 @@ async function initMap() {
     const apiLoader = new Loader(apiOptions);
     await apiLoader.load();
 
+    slider.min = 0;
+    slider.max = 0;
     const map = new google.maps.Map(mapDiv, mapOptions)
-    const sliderDiv = document.createElement("slider")
-    historySlider = createHistoryControl(map)
-    historySlider.min = 0;
-    historySlider.max = 0;
-
-    sliderDiv.appendChild(historySlider)
-    map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(sliderDiv)
     return map
 }
 
@@ -72,10 +67,6 @@ async function initWebGLOverlayView(map) {
     let elements = []
 
     webGLOverlayView.onDraw = ({ gl, transformer }) => {
-        historySlider.addEventListener("input", (e) => {
-            selectedDot = e.target.value;
-            renderer.resetState();
-        })
 
         for (let i = 0; i < elements.length; i++) {
             scene.remove(elements[i])
@@ -205,10 +196,10 @@ const connectToSocket = (renderer, map) => {
         if (!selectedUser) {
             selectedUser = userID;
         }
+        slider.max = users[userID].data.length-1;
         console.log(users)
         current++;
-        historySlider.value = selectedDot;
-        historySlider.max = users[userID].data.length-1;
+        
         renderer.resetState();
     }
 
@@ -221,24 +212,64 @@ connectToSocket();
 ///
 /// SLIDER
 ///
-const createHistoryControl = (map) => {
-    const controlSlider = document.createElement("input");
+const slider = document.getElementById("slider")
+const central_btn = document.getElementById("central_btn")
+const slider_back_btn = document.getElementById("back_btn")
+const slider_forward_btn = document.getElementById("forward_btn")
 
-    controlSlider.setAttribute("type", "range")
-    controlSlider.setAttribute("class", "w-full h-2 bg-gray-200 mb-20 rounded-lg appearance-none cursor-pointer dark:bg-gray-700")
-    controlSlider.setAttribute("min", 0)
-    controlSlider.setAttribute("max", 100)
-    controlSlider.setAttribute("value", 0)
+let isPlaying = false;
+slider.addEventListener("input", (e) => {
+    selectedDot = e.target.value
+})
+slider.addEventListener("change", (e) => {
+    selectedDot = e.target.value
+})
+let timer;
+central_btn.addEventListener("click", () => {
+    if (isPlaying) {
+        clearInterval(timer)
+        central_btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24">' +
+            '              <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />' +
+            '            </svg>'
+        isPlaying = false
+        return;
+    }
+    isPlaying = true
+    central_btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24">' +
+        '  <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clip-rule="evenodd" />' +
+        '</svg>'
+    const val = parseInt(slider.value)
+    if (val === users[selectedUser].data.length - 1) {
+        slider.value = 0
+        selected = 0
+    }
+    timer = setInterval(() => {
+        slider.value = parseInt(slider.value) + 1;
+        selectedDot = parseInt(slider.value)
+        if (parseInt(slider.value) === users[selectedUser].data.length - 1) {
+            clearInterval(timer)
+            central_btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24">' +
+                '              <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />' +
+                '            </svg>'
+            isPlaying = false
+        }
+    }, 1000)
+})
 
-    // controlSlider.style.width = "300px"
-    // controlSlider.style.height = "200px"
-    // controlSlider.style.border = "1px solid #000000"
 
-    console.log(controlSlider)
 
-    controlSlider.addEventListener("change", (e) => {
-        console.log(e.target.value)
-    })
+slider_back_btn.addEventListener("click", () => {
+    if (isPlaying) return;
+    const val = parseInt(slider.value)
+    if (val === 0) return;
+    slider.value = val - 1;
+    selected = val - 1;
+})
 
-    return controlSlider
-}
+slider_forward_btn.addEventListener("click", () => {
+    if (isPlaying) return;
+    const val = parseInt(slider.value)
+    if (val === users[selectedUser].data.length - 1) return;
+    slider.value = val + 1;
+    selected = val + 1;
+})
