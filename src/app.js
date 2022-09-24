@@ -3,6 +3,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Loader } from '@googlemaps/js-api-loader';
 
 
+
+/// MAP DATA
 var data = getData()
 var ind = 0;
 var selected = 0;
@@ -20,17 +22,27 @@ const mapOptions = {
     "mapId": "b498aa93b3c701a9"
 }
 
+var historySlider;
+
 async function initMap() {
     const mapDiv = document.getElementById("map");
     const apiLoader = new Loader(apiOptions);
     await apiLoader.load();
-    return new google.maps.Map(mapDiv, mapOptions);
+
+    const map = new google.maps.Map(mapDiv, mapOptions)
+    const sliderDiv = document.createElement("slider")
+    historySlider = createHistoryControl(map)
+    historySlider.min = 0;
+    historySlider.max = 0;
+
+
+    sliderDiv.appendChild(historySlider)
+    map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(sliderDiv)
+    return map
 }
 
 var selected = 0;
-const cordPoints = [
-
-];
+const cordPoints = [];
 
 async function initWebGLOverlayView(map) {
   
@@ -52,9 +64,13 @@ async function initWebGLOverlayView(map) {
 
 
     webGLOverlayView.onDraw = ({ gl, transformer }) => {
+      historySlider.addEventListener("change", (e) => {
+        console.log(e.target.value)
+        selected = e.target.value;
+        renderer.resetState();
+      })
 
       for (let i = 0; i < cordPoints.length; i++) {
-        
         let material, geometry;
 
         if (i == selected) {
@@ -83,7 +99,9 @@ async function initWebGLOverlayView(map) {
           ...gl.getContextAttributes(),
       });
 
+
       renderer.autoClear = false;
+      scene.autoClear = false
 
       loader.manager.onLoad = () => {
         
@@ -92,7 +110,7 @@ async function initWebGLOverlayView(map) {
     webGLOverlayView.setMap(map);
 
 
-  const myInterval = setInterval(myFunction, 3000);
+  const myInterval = setInterval(myFunction, 1000);
 
   function myFunction() {
     console.log(ind + " " + data.length);
@@ -103,6 +121,8 @@ async function initWebGLOverlayView(map) {
     cordPoints.push(data[ind])
     selected = ind;
     ind++
+    historySlider.max = cordPoints.length;
+    historySlider.value = cordPoints.length;
     renderer.resetState();
   }
 }
@@ -147,3 +167,34 @@ function getData() {
       },
     ];
 }
+
+
+const exampleSocket = new WebSocket("wss://www.example.com/socketserver", "protocolOne");
+
+
+
+///
+/// SLIDER
+///
+const createHistoryControl = (map) => {
+  const controlSlider = document.createElement("input");
+
+  controlSlider.setAttribute("type", "range")
+  controlSlider.setAttribute("class", "w-full h-2 bg-gray-200 mb-20 rounded-lg appearance-none cursor-pointer dark:bg-gray-700")
+  controlSlider.setAttribute("min", 0)
+  controlSlider.setAttribute("max", 100)
+  controlSlider.setAttribute("value", 0)
+
+  // controlSlider.style.width = "300px"
+  // controlSlider.style.height = "200px"
+  // controlSlider.style.border = "1px solid #000000"
+
+  console.log(controlSlider)
+
+  controlSlider.addEventListener("change", (e) => {
+      console.log(e.target.value)
+  })
+
+  return controlSlider
+}
+
