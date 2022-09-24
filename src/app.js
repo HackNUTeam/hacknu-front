@@ -13,7 +13,6 @@ const users = {
     },
 };
 let selectedUser;
-var data = getData()
 var current = 0;
 
 var selectedDot = 0;
@@ -28,13 +27,14 @@ const mapOptions = {
     "tilt": 20,
     "heading": 0,
     "zoom": 17,
-    "center": { lat: 33.8004048, lng: -118.3890381 },
+    "center": { lat: 51.0905, lng: 71.3982 },
     "mapId": "b498aa93b3c701a9"
 }
 
 
 
 async function initMap() {
+
     const mapDiv = document.getElementById("map");
     const apiLoader = new Loader(apiOptions);
     await apiLoader.load();
@@ -43,7 +43,7 @@ async function initMap() {
     const sliderDiv = document.createElement("slider")
     historySlider = createHistoryControl(map)
     historySlider.min = 0;
-    historySlider.max = data.length - 1;
+    historySlider.max = 0;
 
     sliderDiv.appendChild(historySlider)
     map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(sliderDiv)
@@ -107,7 +107,7 @@ async function initWebGLOverlayView(map) {
 
         renderer.autoClear = false;
         scene.autoClear = false
-
+        connectToSocket(renderer);
         loader.manager.onLoad = () => {
 
         }
@@ -117,7 +117,8 @@ async function initWebGLOverlayView(map) {
 
     function drawSphereDot(transformer, point, color) {
         let material, geometry;
-        geometry = new THREE.SphereGeometry(2, 32, 32);
+
+        geometry = new THREE.SphereGeometry(1, 32, 32);
         material = new THREE.MeshBasicMaterial({ color: color, opacity: 0.7, transparent: true });
         const matrix = transformer.fromLatLngAltitude(point);
         camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
@@ -141,7 +142,7 @@ async function initWebGLOverlayView(map) {
 
         var geometry = new THREE.SphereGeometry(10, 16, 16);
 
-        let zScale = point.horizontalAccuracy / point.verticalAccuracy;
+        let zScale = point.verticalAccuracy / point.horizontalAccuracy;
         geometry.applyMatrix(new THREE.Matrix4().makeScale(1, 1, zScale));
         const material = new THREE.LineBasicMaterial({ color: color, opacity: 0.7, transparent: true });
         const ellipse = new THREE.Mesh(geometry, material);
@@ -152,31 +153,9 @@ async function initWebGLOverlayView(map) {
         renderer.render(scene, camera);
         renderer.resetState();
     }
-    let intf = setInterval(addCords, 1000)
+    // let intf = setInterval(addCords, 1000)
 
-    function addCords() {
-        console.log(users)
-        if (data.length > current) {
-            if (!users[data[current].userID]) {
-                users[data[current].userID] = {
-                    color: 'red',
-                    uncertaintyColor: "lightblue",
-                    data: [],
-                };
-            } else {
-                users[data[current].userID].data.push(data[current]);
-            }
-            selectedDot = current;
-            if (!selectedUser) {
-                selectedUser = data[current].userID;
-            }
-            current++;
-            historySlider.value = selectedDot;
-            renderer.resetState();
-        } else {
-            clearInterval(intf)
-        }
-    }
+
 }
 
 
@@ -191,65 +170,6 @@ async function initWebGLOverlayView(map) {
 ///
 /// API
 ///
-function getData() {
-    return [{
-            lat: 33.8002048,
-            lng: -118.389481,
-            altitude: 72.79997,
-            userID: 1,
-            timestamp: 1610000000,
-            floor: "green hall",
-            horizontalAccuracy: 3,
-            verticalAccuracy: 4,
-            activity: "walking"
-        },
-        {
-            lat: 33.8004048,
-            lng: -118.3890381,
-            altitude: 72.7999878,
-            userID: 1,
-            timestamp: 1610000000,
-            floor: "green hall",
-            horizontalAccuracy: 2,
-            verticalAccuracy: 1,
-            activity: "walking"
-        },
-        {
-            lat: 33.8005925,
-            lng: -118.3887513,
-            altitude: 72.5999756,
-            userID: 1,
-            timestamp: 1610000000,
-            floor: "green hall",
-            horizontalAccuracy: 5,
-            verticalAccuracy: 5,
-            activity: "walking"
-        },
-        {
-            lat: 33.800705,
-            lng: -118.3885462,
-            altitude: 72.2000122,
-            userID: 1,
-            timestamp: 1610000000,
-            floor: "green hall",
-            horizontalAccuracy: 5,
-            verticalAccuracy: 8,
-            activity: "walking"
-        },
-        {
-            lat: 33.8008574,
-            lng: -118.3881463,
-            altitude: 72.7999878,
-            userID: 1,
-            timestamp: 1610000000,
-            floor: "green hall",
-            horizontalAccuracy: 5,
-            verticalAccuracy: 8,
-            activity: "walking"
-        },
-    ];
-}
-
 
 // const exampleSocket = new WebSocket("wss://www.example.com/socketserver", "protocolOne");
 
@@ -260,16 +180,44 @@ function getData() {
 /// WEBSOCKET
 ///
 
-const connectToSocket = () => {
-    var webSocket = new WebSocket("ws://3.70.126.190:4000/ws-disp", []);
+const connectToSocket = (renderer, map) => {
+    console.log("CONNECCT!!!")
+    var webSocket = new WebSocket("ws://3.70.126.190:4000/dispatcher", []);
+    
 
+  
+    console.log("READ MESSAGES")
     webSocket.onmessage = (event) => {
-        console.log(event.data);
+        let incoming = JSON.parse(event.data);
+        let userID = incoming.userID
+        console.log(incoming)
+
+        if (!users[userID]) {
+            users[userID] = {
+                color: 'red',
+                uncertaintyColor: "lightblue",
+                data: [],
+            };
+        } else {
+            users[userID].data.push(incoming);
+        }
+        selectedDot = users[userID].data.length-1;
+        if (!selectedUser) {
+            selectedUser = userID;
+        }
+        console.log(users)
+        current++;
+        historySlider.value = selectedDot;
+        historySlider.max = users[userID].data.length-1;
+        renderer.resetState();
     }
+
+    // webSocket.send(JSON.stringify(obj));
 }
 
-
 connectToSocket();
+
+
 ///
 /// SLIDER
 ///
