@@ -6,7 +6,6 @@ import { Loader } from '@googlemaps/js-api-loader';
 
 /// MAP DATA
 var data = getData()
-var ind = 0;
 var selected = 0;
 
 const apiOptions = {
@@ -33,7 +32,7 @@ async function initMap() {
     const sliderDiv = document.createElement("slider")
     historySlider = createHistoryControl(map)
     historySlider.min = 0;
-    historySlider.max = 0;
+    historySlider.max = data.length-1;
 
 
     sliderDiv.appendChild(historySlider)
@@ -42,7 +41,7 @@ async function initMap() {
 }
 
 var selected = 0;
-const cordPoints = [];
+
 
 async function initWebGLOverlayView(map) {
   
@@ -63,35 +62,27 @@ async function initWebGLOverlayView(map) {
     }
 
 
+    let elements = []
+
     webGLOverlayView.onDraw = ({ gl, transformer }) => {
-      historySlider.addEventListener("change", (e) => {
+      historySlider.addEventListener("input", (e) => {
         selected = e.target.value;
         renderer.resetState();
       })
 
-      for (let i = 0; i < selected + 1; i++) {
-        let material, geometry;
-
-        if (i == selected) {
-          geometry = new THREE.SphereGeometry( 2, 32, 32 );
-          material = new THREE.MeshBasicMaterial({color: 'red', opacity: 0.7, transparent: true});
-        } else {
-          geometry = new THREE.SphereGeometry( 2, 32, 32 );
-          material = new THREE.MeshBasicMaterial({color: 'lightblue', opacity: 0.5, transparent: true});
-        }
-
-        const matrix = transformer.fromLatLngAltitude(cordPoints[i]);
-        camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
-        
-        const sphere = new THREE.Mesh( geometry, material);
-        scene.add(sphere);
+      for (let i = 0; i < elements.length; i++){
+        scene.remove(elements[i])
         webGLOverlayView.requestRedraw();
         renderer.render(scene, camera);
         renderer.resetState();
       }
+
+      for (let i = 0; i < data.length; i++) {
+        drawSphereDot(transformer, i)
+      }
+      drawUncertainty(transformer);
     }
     
-[1, 2, 3, 4, 5,6]
 
     webGLOverlayView.onContextRestored = ({ gl }) => {
       renderer = new THREE.WebGLRenderer({
@@ -111,21 +102,44 @@ async function initWebGLOverlayView(map) {
     webGLOverlayView.setMap(map);
 
 
-  const myInterval = setInterval(myFunction, 1000);
-
-  function myFunction() {
-    console.log(ind + " " + data.length);
-    if (ind >= data.length) {
-      clearInterval(myInterval)
-      return 
+    function drawSphereDot(transformer, i) {
+      let material, geometry;
+      geometry = new THREE.SphereGeometry( 2, 32, 32 );
+      material = new THREE.MeshBasicMaterial({color: 'red', opacity: 0.7, transparent: true});
+      const matrix = transformer.fromLatLngAltitude(data[i]);
+      camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
+      
+      const sphere = new THREE.Mesh( geometry, material);
+      elements.push(sphere)
+      scene.add(sphere);
+      webGLOverlayView.requestRedraw();
+      renderer.render(scene, camera);
+      renderer.resetState();
     }
-    cordPoints.push(data[ind])
-    selected = ind;
-    ind++
-    historySlider.max = cordPoints.length;
-    historySlider.value = cordPoints.length;
-    renderer.resetState();
-  }
+
+
+    function drawUncertainty(transformer)  {
+      const matrix = transformer.fromLatLngAltitude(data[selected]);
+      camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
+      var path = new THREE.Shape();
+       path.absellipse(
+        0,  0,            // ax, aY
+        10, 5,           // xRadius, yRadius
+        0,  2 * Math.PI,  // aStartAngle, aEndAngle
+        false,            // aClockwise
+        0                 // aRotation
+      );
+
+      const geometry = new THREE.ShapeBufferGeometry( path );
+      const material = new THREE.LineBasicMaterial( { color: 'lightblue' } );
+      const ellipse = new THREE.Mesh( geometry, material );
+
+      elements.push(ellipse)
+      scene.add(ellipse);
+      webGLOverlayView.requestRedraw();
+      renderer.render(scene, camera);
+      renderer.resetState();
+    }
 }
 
 (async() => {
@@ -142,9 +156,9 @@ async function initWebGLOverlayView(map) {
 function getData() {
   return [
       {
-        lat: 33.8004048,
-        lng: -118.3890381,
-        altitude: 72.7999878
+        lat: 33.8002048,
+        lng: -118.389481,
+        altitude: 72.79997,
       },
       {
         lat: 33.8004048,
