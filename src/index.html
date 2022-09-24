@@ -20,10 +20,35 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <title>Google Maps Platform WebGL Codelab</title> 
     <link rel="stylesheet" type="text/css" href="./styles.css" />   
-    <script src="./app.js" defer></script>    
+    <script src="./app.js" defer></script>
   </head>
   <body>
     <div id="map">
     </div>
+    <div class="slider_container">
+      <div class="slider_container_div">
+        <label for="slider" style="display: none"></label>
+        <input type="range" class="slider" name="slider" id="slider" min="0" max="4" value="0" />
+        <div class="slider_controllers">
+          <button id="back_btn" class="slider_back_btn controller_btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="white" width="20" height="20" class="w-5 h-5">
+              <path fill-rule="evenodd" d="M15.79 14.77a.75.75 0 01-1.06.02l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 111.04 1.08L11.832 10l3.938 3.71a.75.75 0 01.02 1.06zm-6 0a.75.75 0 01-1.06.02l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 111.04 1.08L5.832 10l3.938 3.71a.75.75 0 01.02 1.06z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          <button id="central_btn" class="slider_central_btn controller_btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" width="24" height="24" class="w-6 h-6">
+              <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          <button id="forward_btn" class="slider_forward_btn controller_btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="white" width="20" height="20" class="w-5 h-5">
+              <path fill-rule="evenodd" d="M10.21 14.77a.75.75 0 01.02-1.06L14.168 10 10.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+              <path fill-rule="evenodd" d="M4.21 14.77a.75.75 0 01.02-1.06L8.168 10 4.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <script src="./slider.js"></script>
   </body>
 </html>
