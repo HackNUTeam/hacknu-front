@@ -5,6 +5,7 @@ import { Loader } from '@googlemaps/js-api-loader';
 
 var data = getData()
 var ind = 0;
+var selected = 0;
 
 const apiOptions = {
     "apiKey": "AIzaSyBHiUAtpqxTupKHUJTal9qfG_Z8DKvLPOQ",
@@ -53,27 +54,26 @@ async function initWebGLOverlayView(map) {
     webGLOverlayView.onDraw = ({ gl, transformer }) => {
 
       for (let i = 0; i < cordPoints.length; i++) {
-        const matrix = transformer.fromLatLngAltitude(cordPoints[i]);
-        camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
+        
         let material, geometry;
 
         if (i == selected) {
-          geometry = new THREE.SphereGeometry( 10, 32, 32 );
-          material = new THREE.MeshBasicMaterial({color: 'red', opacity: 0.5, transparent: true});
+          geometry = new THREE.SphereGeometry( 2, 32, 32 );
+          material = new THREE.MeshBasicMaterial({color: 'red', opacity: 0.7, transparent: true});
         } else {
-          geometry = new THREE.SphereGeometry( 5, 32, 32 );
+          geometry = new THREE.SphereGeometry( 2, 32, 32 );
           material = new THREE.MeshBasicMaterial({color: 'lightblue', opacity: 0.5, transparent: true});
         }
 
+        const matrix = transformer.fromLatLngAltitude(cordPoints[i]);
+        camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
+        
         const sphere = new THREE.Mesh( geometry, material);
         scene.add(sphere);
         webGLOverlayView.requestRedraw();
         renderer.render(scene, camera);
         renderer.resetState();
-
       }
-
-
     }
 
     webGLOverlayView.onContextRestored = ({ gl }) => {
@@ -92,10 +92,16 @@ async function initWebGLOverlayView(map) {
     webGLOverlayView.setMap(map);
 
 
-  setInterval(myFunction, 2000)
+  const myInterval = setInterval(myFunction, 3000);
 
   function myFunction() {
+    console.log(ind + " " + data.length);
+    if (ind >= data.length) {
+      clearInterval(myInterval)
+      return 
+    }
     cordPoints.push(data[ind])
+    selected = ind;
     ind++
     renderer.resetState();
   }
