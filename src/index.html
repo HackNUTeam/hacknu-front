@@ -23,8 +23,7 @@
     <script src="./app.js" defer></script>    
   </head>
   <body>
-    <div id="map">
-    </div>    
+    <div id="mapWrapper">
     <div id="card">
       <div id="imageWrapper">
         <img src="" alt="No Image">
@@ -36,6 +35,16 @@
         <h4>Address</h4>
         <h3 id="place"></h3>
       </div>      
+    </div>
+    <div id="map">
+    
+    </div>    
+    </div>
+    <div id="controller">
+    
+      <div class="slidecontainer">
+        <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+      </div>
     </div>
   </body>
 </html>
