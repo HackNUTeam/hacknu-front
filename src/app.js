@@ -130,7 +130,9 @@ async function initWebGLOverlayView(map) {
 
 
         var geometry = new THREE.SphereGeometry(10, 16, 16);
-        geometry.applyMatrix(new THREE.Matrix4().makeScale(1, 1, 1.2));
+
+        let zScale = 1.2;
+        geometry.applyMatrix(new THREE.Matrix4().makeScale(1, 1, zScale));
         const material = new THREE.LineBasicMaterial({ color: 'lightblue', opacity: 0.7, transparent: true });
         const ellipse = new THREE.Mesh(geometry, material);
 
