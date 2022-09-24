@@ -129,8 +129,8 @@ async function initWebGLOverlayView(map) {
         camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
 
 
-        var geometry = new THREE.SphereGeometry(10, 16, 12);
-        geometry.applyMatrix(new THREE.Matrix4().makeScale(1.5, 1.2, 1));
+        var geometry = new THREE.SphereGeometry(10, 16, 16);
+        geometry.applyMatrix(new THREE.Matrix4().makeScale(1, 1, 1.2));
         const material = new THREE.LineBasicMaterial({ color: 'lightblue', opacity: 0.7, transparent: true });
         const ellipse = new THREE.Mesh(geometry, material);
 
@@ -147,6 +147,7 @@ async function initWebGLOverlayView(map) {
             points.push(data[current]);
             selected = current;
             current++;
+            historySlider.value = selected;
             renderer.resetState();
         } else {
             clearInterval(intf)
