@@ -5,8 +5,19 @@ import { Loader } from '@googlemaps/js-api-loader';
 
 
 /// MAP DATA
+const users = {
+    1: {
+        color: "red",
+        uncertaintyColor: "lightblue",
+        data: [],
+    },
+};
+let selectedUser;
 var data = getData()
-var selected = 0;
+var current = 0;
+
+var selectedDot = 0;
+var historySlider;
 
 const apiOptions = {
     "apiKey": "AIzaSyBHiUAtpqxTupKHUJTal9qfG_Z8DKvLPOQ",
@@ -21,7 +32,7 @@ const mapOptions = {
     "mapId": "b498aa93b3c701a9"
 }
 
-var historySlider;
+
 
 async function initMap() {
     const mapDiv = document.getElementById("map");
@@ -34,15 +45,11 @@ async function initMap() {
     historySlider.min = 0;
     historySlider.max = data.length - 1;
 
-
     sliderDiv.appendChild(historySlider)
     map.controls[google.maps.ControlPosition.BOTTOM_CENTER].push(sliderDiv)
     return map
 }
 
-var selected = 0;
-let points = []
-let current = 0;
 async function initWebGLOverlayView(map) {
 
     let scene, renderer, camera, loader;
@@ -66,23 +73,26 @@ async function initWebGLOverlayView(map) {
 
     webGLOverlayView.onDraw = ({ gl, transformer }) => {
         historySlider.addEventListener("input", (e) => {
-            selected = e.target.value;
+            selectedDot = e.target.value;
             renderer.resetState();
         })
 
         for (let i = 0; i < elements.length; i++) {
             scene.remove(elements[i])
-
         }
         webGLOverlayView.requestRedraw();
         renderer.render(scene, camera);
         renderer.resetState();
 
-        for (let i = 0; i < points.length; i++) {
-            drawSphereDot(transformer, points[i])
+        if (!selectedUser) {
+            return
         }
-        if (points.length > selected) {
-            drawUncertainty(transformer, points[selected]);
+
+        for (let i = 0; i < users[selectedUser].data.length; i++) {
+            drawSphereDot(transformer, users[selectedUser].data[i], users[selectedUser].color)
+        }
+        if (users[selectedUser].data.length > selectedDot) {
+            drawUncertainty(transformer, users[selectedUser].data[selectedDot], users[selectedUser].uncertaintyColor);
         }
     }
 
@@ -105,11 +115,11 @@ async function initWebGLOverlayView(map) {
     webGLOverlayView.setMap(map);
 
 
-    function drawSphereDot(transformer, i) {
+    function drawSphereDot(transformer, point, color) {
         let material, geometry;
         geometry = new THREE.SphereGeometry(2, 32, 32);
-        material = new THREE.MeshBasicMaterial({ color: 'red', opacity: 0.7, transparent: true });
-        const matrix = transformer.fromLatLngAltitude(i);
+        material = new THREE.MeshBasicMaterial({ color: color, opacity: 0.7, transparent: true });
+        const matrix = transformer.fromLatLngAltitude(point);
         camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
 
         const sphere = new THREE.Mesh(geometry, material);
@@ -121,7 +131,7 @@ async function initWebGLOverlayView(map) {
     }
 
 
-    function drawUncertainty(transformer, point) {
+    function drawUncertainty(transformer, point, color) {
         if (point === null) {
             return
         }
@@ -131,9 +141,9 @@ async function initWebGLOverlayView(map) {
 
         var geometry = new THREE.SphereGeometry(10, 16, 16);
 
-        let zScale = 1.2;
+        let zScale = point.horizontalAccuracy / point.verticalAccuracy;
         geometry.applyMatrix(new THREE.Matrix4().makeScale(1, 1, zScale));
-        const material = new THREE.LineBasicMaterial({ color: 'lightblue', opacity: 0.7, transparent: true });
+        const material = new THREE.LineBasicMaterial({ color: color, opacity: 0.7, transparent: true });
         const ellipse = new THREE.Mesh(geometry, material);
 
         elements.push(ellipse)
@@ -145,11 +155,23 @@ async function initWebGLOverlayView(map) {
     let intf = setInterval(addCords, 1000)
 
     function addCords() {
+        console.log(users)
         if (data.length > current) {
-            points.push(data[current]);
-            selected = current;
+            if (!users[data[current].userID]) {
+                users[data[current].userID] = {
+                    color: 'red',
+                    uncertaintyColor: "lightblue",
+                    data: [],
+                };
+            } else {
+                users[data[current].userID].data.push(data[current]);
+            }
+            selectedDot = current;
+            if (!selectedUser) {
+                selectedUser = data[current].userID;
+            }
             current++;
-            historySlider.value = selected;
+            historySlider.value = selectedDot;
             renderer.resetState();
         } else {
             clearInterval(intf)
@@ -174,26 +196,56 @@ function getData() {
             lat: 33.8002048,
             lng: -118.389481,
             altitude: 72.79997,
+            userID: 1,
+            timestamp: 1610000000,
+            floor: "green hall",
+            horizontalAccuracy: 3,
+            verticalAccuracy: 4,
+            activity: "walking"
         },
         {
             lat: 33.8004048,
             lng: -118.3890381,
-            altitude: 72.7999878
+            altitude: 72.7999878,
+            userID: 1,
+            timestamp: 1610000000,
+            floor: "green hall",
+            horizontalAccuracy: 2,
+            verticalAccuracy: 1,
+            activity: "walking"
         },
         {
             lat: 33.8005925,
             lng: -118.3887513,
-            altitude: 72.5999756
+            altitude: 72.5999756,
+            userID: 1,
+            timestamp: 1610000000,
+            floor: "green hall",
+            horizontalAccuracy: 5,
+            verticalAccuracy: 5,
+            activity: "walking"
         },
         {
             lat: 33.800705,
             lng: -118.3885462,
-            altitude: 72.2000122
+            altitude: 72.2000122,
+            userID: 1,
+            timestamp: 1610000000,
+            floor: "green hall",
+            horizontalAccuracy: 5,
+            verticalAccuracy: 8,
+            activity: "walking"
         },
         {
             lat: 33.8008574,
             lng: -118.3881463,
-            altitude: 72.7999878
+            altitude: 72.7999878,
+            userID: 1,
+            timestamp: 1610000000,
+            floor: "green hall",
+            horizontalAccuracy: 5,
+            verticalAccuracy: 8,
+            activity: "walking"
         },
     ];
 }
@@ -203,6 +255,21 @@ function getData() {
 
 
 
+
+///
+/// WEBSOCKET
+///
+
+const connectToSocket = () => {
+    var webSocket = new WebSocket("ws://3.70.126.190:4000/ws-disp", []);
+
+    webSocket.onmessage = (event) => {
+        console.log(event.data);
+    }
+}
+
+
+connectToSocket();
 ///
 /// SLIDER
 ///
