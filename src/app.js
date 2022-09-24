@@ -72,10 +72,11 @@ async function initWebGLOverlayView(map) {
 
       for (let i = 0; i < elements.length; i++){
         scene.remove(elements[i])
-        webGLOverlayView.requestRedraw();
-        renderer.render(scene, camera);
-        renderer.resetState();
+
       }
+      webGLOverlayView.requestRedraw();
+      renderer.render(scene, camera);
+      renderer.resetState();
 
       for (let i = 0; i < data.length; i++) {
         drawSphereDot(transformer, i)
@@ -121,17 +122,11 @@ async function initWebGLOverlayView(map) {
     function drawUncertainty(transformer)  {
       const matrix = transformer.fromLatLngAltitude(data[selected]);
       camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
-      var path = new THREE.Shape();
-       path.absellipse(
-        0,  0,            // ax, aY
-        10, 5,           // xRadius, yRadius
-        0,  2 * Math.PI,  // aStartAngle, aEndAngle
-        false,            // aClockwise
-        0                 // aRotation
-      );
+      
 
-      const geometry = new THREE.ShapeBufferGeometry( path );
-      const material = new THREE.LineBasicMaterial( { color: 'lightblue' } );
+      var geometry = new THREE.SphereGeometry( 10, 16, 12 );
+      geometry.applyMatrix( new THREE.Matrix4().makeScale( 1.5, 1.2, 1 ) );
+      const material = new THREE.LineBasicMaterial( { color: 'lightblue', opacity: 0.7, transparent: true } );
       const ellipse = new THREE.Mesh( geometry, material );
 
       elements.push(ellipse)
