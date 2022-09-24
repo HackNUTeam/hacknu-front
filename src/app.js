@@ -2,6 +2,19 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Loader } from '@googlemaps/js-api-loader';
 
+/// API DATA
+
+const API_URL = "http://3.70.126.190/"
+
+/// HISTORY
+
+let historicalMode = false
+const historyBtn = document.getElementById("history_btn")
+historyBtn.addEventListener("click", () => {
+    historicalMode = !historicalMode
+    axios.get(API_URL + "get-history").then(res => console.log(res))
+})
+
 /// MAP DATA
 const users = {};
 
@@ -70,12 +83,15 @@ async function initWebGLOverlayView(map) {
             return
         }
 
-        for (let i = 0; i < users[selectedUser].data.length; i++) {
-            drawSphereDot(transformer, users[selectedUser].data[i], users[selectedUser].color)
-        }
-        if (users[selectedUser].data.length > selectedDot) {
-            drawUncertainty(transformer, users[selectedUser].data[selectedDot], users[selectedUser].uncertaintyColor);
-        }
+        drawSphereDot(transformer, users[selectedUser].data, users[selectedUser].color)
+        drawUncertainty(transformer, users[selectedUser].data, users[selectedUser].uncertaintyColor);
+
+        // for (let i = 0; i < users[selectedUser].data.length; i++) {
+        //     drawSphereDot(transformer, users[selectedUser].data[i], users[selectedUser].color)
+        // }
+        // if (users[selectedUser].data.length > selectedDot) {
+        //     drawUncertainty(transformer, users[selectedUser].data[selectedDot], users[selectedUser].uncertaintyColor);
+        // }
     }
 
 
@@ -143,8 +159,6 @@ async function initWebGLOverlayView(map) {
     initWebGLOverlayView(map);
 })();
 
-
-
 ///
 /// WEBSOCKET
 ///
@@ -155,8 +169,9 @@ const createCard = (id, data, color) => {
     const card = document.createElement("button")
     card.className = "card"
     card.id = "card_" + id
+    const activeStyle = selectedUser === parseInt(id) ? "active_card" : ""
     card.innerHTML = `
-        <div class="card_header" id="card_identifier_${id}" style="background-color: ${color}">${data.identifier}</div>
+        <div class="card_header" id="card_identifier_${id} ${activeStyle}" style="background-color: ${color}">${data.identifier}</div>
         <div class="card_body">
           <div class="card_time">Date: <span id="card_time_${id}" style="font-weight: normal;">${new Date(data.timestamp).toISOString().slice(0, 10)}</span></div>
           <div class="card_floor">Floor: <span id="card_floor_${id}" style="font-weight: normal;">${data.floor}</span></div>
@@ -213,18 +228,19 @@ const connectToSocket = (renderer, map) => {
             users[userID] = {
                 color,
                 uncertaintyColor: "lightblue",
-                data: [incoming],
+                data: incoming,
+                historicalData: [],
             };
             cardsContainer.appendChild(createCard(userID, incoming, color))
         } else {
-            users[userID].data.push(incoming);
+            users[userID].data = incoming;
             editCard(userID, incoming)
         }
-        selectedDot = users[userID].data.length-1;
+        // selectedDot = users[userID].data.length-1;
         if (!selectedUser) {
             selectedUser = userID;
         }
-        slider.max = users[userID].data.length-1;
+        // slider.max = users[userID].data.length-1;
         console.log(users)
         current++;
         
@@ -245,10 +261,10 @@ const slider_forward_btn = document.getElementById("forward_btn")
 
 let isPlaying = false;
 slider.addEventListener("input", (e) => {
-    selectedDot = e.target.value
+    // selectedDot = e.target.value
 })
 slider.addEventListener("change", (e) => {
-    selectedDot = e.target.value
+    // selectedDot = e.target.value
 })
 let timer;
 central_btn.addEventListener("click", () => {
