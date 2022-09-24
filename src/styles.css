@@ -83,3 +83,53 @@ body,
 .slider_forward_btn {
     padding: 4px;
 }
+
+.cards_container {
+    position: absolute;
+    top: 80px;
+    left: 10px;
+    max-height: 600px;
+    width: 200px;
+    padding: 10px 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    overflow-y: auto;
+    background-color: #ffffff;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    font-family: sans-serif;
+}
+
+.card {
+    overflow: hidden;
+    width: 90%;
+    box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    border: none;
+    cursor: pointer;
+}
+
+.card_header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px;
+    /*background-color: indianred;*/
+    color: white;
+}
+
+.card_body {
+    padding: 20px 10px 10px;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.card_time, .card_floor, .card_activity {
+    margin-bottom: 10px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+}

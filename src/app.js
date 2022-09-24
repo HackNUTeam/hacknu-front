@@ -2,21 +2,15 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Loader } from '@googlemaps/js-api-loader';
 
-
-
 /// MAP DATA
-const users = {
-    1: {
-        color: "red",
-        uncertaintyColor: "lightblue",
-        data: [],
-    },
-};
+const users = {};
+
 let selectedUser;
-var current = 0;
+let current = 0;
 
-var selectedDot = 0;
+let selectedDot = 0;
 
+let map
 
 const apiOptions = {
     "apiKey": "AIzaSyBHiUAtpqxTupKHUJTal9qfG_Z8DKvLPOQ",
@@ -31,10 +25,7 @@ const mapOptions = {
     "mapId": "b498aa93b3c701a9"
 }
 
-
-
 async function initMap() {
-
     const mapDiv = document.getElementById("map");
     const apiLoader = new Loader(apiOptions);
     await apiLoader.load();
@@ -131,10 +122,10 @@ async function initWebGLOverlayView(map) {
         camera.projectionMatrix = new THREE.Matrix4().fromArray(matrix);
 
 
-        var geometry = new THREE.SphereGeometry(10, 16, 16);
+        let geometry = new THREE.SphereGeometry(10, 16, 16);
 
         let zScale = point.verticalAccuracy / point.horizontalAccuracy;
-        geometry.applyMatrix(new THREE.Matrix4().makeScale(1, 1, zScale));
+        geometry.applyMatrix4(new THREE.Matrix4().makeScale(1, 1, zScale));
         const material = new THREE.LineBasicMaterial({ color: color, opacity: 0.7, transparent: true });
         const ellipse = new THREE.Mesh(geometry, material);
 
@@ -144,53 +135,90 @@ async function initWebGLOverlayView(map) {
         renderer.render(scene, camera);
         renderer.resetState();
     }
-    // let intf = setInterval(addCords, 1000)
-
-
 }
 
 
 (async() => {
-    const map = await initMap();
+    map = await initMap();
     initWebGLOverlayView(map);
 })();
-
-
-
-
-///
-/// API
-///
-
-// const exampleSocket = new WebSocket("wss://www.example.com/socketserver", "protocolOne");
-
 
 
 
 ///
 /// WEBSOCKET
 ///
+const colors = ["#4285F4", 	"#34A853", "#FBBC05", "#EA4335"]
+const cardsContainer = document.getElementById("cards_container")
+
+const createCard = (id, data, color) => {
+    const card = document.createElement("button")
+    card.className = "card"
+    card.id = "card_" + id
+    card.innerHTML = `
+        <div class="card_header" id="card_identifier_${id}" style="background-color: ${color}">${data.identifier}</div>
+        <div class="card_body">
+          <div class="card_time">Date: <span id="card_time_${id}" style="font-weight: normal;">${new Date(data.timestamp).toISOString().slice(0, 10)}</span></div>
+          <div class="card_floor">Floor: <span id="card_floor_${id}" style="font-weight: normal;">${data.floor}</span></div>
+          <div class="card_activity">Activity: <span id="card_activity_${id}" style="font-weight: normal;">${data.activity}</span></div>
+        </div>
+    `
+
+    card.addEventListener("click", () => {
+        selectedUser = id
+        map.setCenter({
+            lat: data.lat,
+            lng: data.lng,
+        })
+        map.setZoom(20)
+    })
+
+    return card
+}
+
+const editCard = (id, data) => {
+    const card = document.getElementById("card_" + id)
+    const cardTime = document.getElementById("card_time_" + id)
+    const cardFloor = document.getElementById("card_floor_" + id)
+    const cardActivity = document.getElementById("card_activity_" + id)
+
+    if (!card || !cardTime || !cardFloor || !cardActivity) return;
+
+    card.addEventListener("click", () => {
+        selectedUser = id
+        map.setCenter({
+            lat: data.lat,
+            lng: data.lng,
+        })
+        map.setZoom(20)
+    })
+
+    cardTime.innerText = new Date(data.timestamp).toISOString().slice(0, 10)
+    cardFloor.innerText = data.floor
+    cardActivity.innerText = data.activity
+}
 
 const connectToSocket = (renderer, map) => {
     console.log("CONNECCT!!!")
-    var webSocket = new WebSocket("ws://3.70.126.190:4000/dispatcher", []);
-    
+    let webSocket = new WebSocket("ws://3.70.126.190:4000/dispatcher", []);
 
-  
     console.log("READ MESSAGES")
     webSocket.onmessage = (event) => {
         let incoming = JSON.parse(event.data);
         let userID = incoming.userID
+        const color = colors[Math.floor(Math.random()*colors.length)]
         console.log(incoming)
 
         if (!users[userID]) {
             users[userID] = {
-                color: 'red',
+                color,
                 uncertaintyColor: "lightblue",
-                data: [],
+                data: [incoming],
             };
+            cardsContainer.appendChild(createCard(userID, incoming, color))
         } else {
             users[userID].data.push(incoming);
+            editCard(userID, incoming)
         }
         selectedDot = users[userID].data.length-1;
         if (!selectedUser) {
@@ -202,8 +230,6 @@ const connectToSocket = (renderer, map) => {
         
         renderer.resetState();
     }
-
-    // webSocket.send(JSON.stringify(obj));
 }
 
 connectToSocket();
@@ -241,7 +267,7 @@ central_btn.addEventListener("click", () => {
     const val = parseInt(slider.value)
     if (val === users[selectedUser].data.length - 1) {
         slider.value = 0
-        selected = 0
+        selectedDot = 0
     }
     timer = setInterval(() => {
         slider.value = parseInt(slider.value) + 1;
@@ -263,7 +289,7 @@ slider_back_btn.addEventListener("click", () => {
     const val = parseInt(slider.value)
     if (val === 0) return;
     slider.value = val - 1;
-    selected = val - 1;
+    selectedDot = val - 1;
 })
 
 slider_forward_btn.addEventListener("click", () => {
@@ -271,5 +297,5 @@ slider_forward_btn.addEventListener("click", () => {
     const val = parseInt(slider.value)
     if (val === users[selectedUser].data.length - 1) return;
     slider.value = val + 1;
-    selected = val + 1;
+    selectedDot = val + 1;
 })
