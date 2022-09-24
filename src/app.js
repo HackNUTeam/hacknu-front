@@ -65,12 +65,11 @@ async function initWebGLOverlayView(map) {
 
     webGLOverlayView.onDraw = ({ gl, transformer }) => {
       historySlider.addEventListener("change", (e) => {
-        console.log(e.target.value)
         selected = e.target.value;
         renderer.resetState();
       })
 
-      for (let i = 0; i < cordPoints.length; i++) {
+      for (let i = 0; i < selected + 1; i++) {
         let material, geometry;
 
         if (i == selected) {
@@ -91,6 +90,8 @@ async function initWebGLOverlayView(map) {
         renderer.resetState();
       }
     }
+    
+[1, 2, 3, 4, 5,6]
 
     webGLOverlayView.onContextRestored = ({ gl }) => {
       renderer = new THREE.WebGLRenderer({
@@ -169,7 +170,7 @@ function getData() {
 }
 
 
-const exampleSocket = new WebSocket("wss://www.example.com/socketserver", "protocolOne");
+// const exampleSocket = new WebSocket("wss://www.example.com/socketserver", "protocolOne");
 
 
 
