@@ -1,19 +1,11 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Loader } from '@googlemaps/js-api-loader';
+import axios from "axios"
 
 /// API DATA
 
-const API_URL = "http://3.70.126.190/"
-
-/// HISTORY
-
-let historicalMode = false
-const historyBtn = document.getElementById("history_btn")
-historyBtn.addEventListener("click", () => {
-    historicalMode = !historicalMode
-    axios.get(API_URL + "get-history").then(res => console.log(res))
-})
+const API_URL = "http://3.70.126.190:4000/"
 
 /// MAP DATA
 const users = {};
@@ -22,6 +14,24 @@ let selectedUser;
 let current = 0;
 
 let selectedDot = 0;
+
+
+/// HISTORY
+
+let historicalMode = false
+const historyBtn = document.getElementById("history_btn")
+const onHistory = () => () => {
+    if (!selectedUser) return;
+    historicalMode = !historicalMode
+    const now = new Date()
+    axios.get(API_URL + "get-history", {
+        params: {
+            name: users[selectedUser].data.identifier,
+            timestamp: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).getTime()/1000
+        }
+    }).then(res => users[selectedUser].historicalData = res.data.data)
+}
+historyBtn.addEventListener("click", onHistory())
 
 let map
 
@@ -64,17 +74,18 @@ async function initWebGLOverlayView(map) {
         scene.add(directionalLight);
 
         loader = new GLTFLoader();
-
     }
 
 
     let elements = []
-
+    let uncertanities = []
     webGLOverlayView.onDraw = ({ gl, transformer }) => {
 
         for (let i = 0; i < elements.length; i++) {
-            scene.remove(elements[i])
+            scene.remove(elements[i]);
+            scene.remove(uncertanities[i]);
         }
+
         webGLOverlayView.requestRedraw();
         renderer.render(scene, camera);
         renderer.resetState();
@@ -85,13 +96,22 @@ async function initWebGLOverlayView(map) {
 
         drawSphereDot(transformer, users[selectedUser].data, users[selectedUser].color)
         drawUncertainty(transformer, users[selectedUser].data, users[selectedUser].uncertaintyColor);
+        for (let i= 0; i < users[selectedUser].historicalData.length - 1; i++){
+            scene.remove(users[selectedUser].historicalData[i]);
+        }
+        webGLOverlayView.requestRedraw();
+        renderer.render(scene, camera);
+        renderer.resetState();
 
-        // for (let i = 0; i < users[selectedUser].data.length; i++) {
-        //     drawSphereDot(transformer, users[selectedUser].data[i], users[selectedUser].color)
-        // }
-        // if (users[selectedUser].data.length > selectedDot) {
-        //     drawUncertainty(transformer, users[selectedUser].data[selectedDot], users[selectedUser].uncertaintyColor);
-        // }
+        for (let i = 0; i < users[selectedUser].historicalData.length; i++) {
+            drawSphereDot(transformer, users[selectedUser].historicalData[i], users[selectedUser].color)
+            if (users[selectedUser].historicalData.length > selectedDot) {
+                drawUncertainty(transformer, users[selectedUser].data[selectedDot], users[selectedUser].uncertaintyColor);
+            }
+        }
+        webGLOverlayView.requestRedraw();
+        renderer.render(scene, camera);
+        renderer.resetState()
     }
 
 
@@ -125,8 +145,7 @@ async function initWebGLOverlayView(map) {
         elements.push(sphere)
         scene.add(sphere);
         webGLOverlayView.requestRedraw();
-        renderer.render(scene, camera);
-        renderer.resetState();
+
     }
 
 
@@ -146,6 +165,7 @@ async function initWebGLOverlayView(map) {
         const ellipse = new THREE.Mesh(geometry, material);
 
         elements.push(ellipse)
+        uncertanities.push(ellipse)
         scene.add(ellipse);
         webGLOverlayView.requestRedraw();
         renderer.render(scene, camera);
@@ -171,7 +191,7 @@ const createCard = (id, data, color) => {
     card.id = "card_" + id
     const activeStyle = selectedUser === parseInt(id) ? "active_card" : ""
     card.innerHTML = `
-        <div class="card_header" id="card_identifier_${id} ${activeStyle}" style="background-color: ${color}">${data.identifier}</div>
+        <div class="card_header" id="card_identifier_${id}" style="background-color: ${color}">${data.identifier}</div>
         <div class="card_body">
           <div class="card_time">Date: <span id="card_time_${id}" style="font-weight: normal;">${new Date(data.timestamp).toISOString().slice(0, 10)}</span></div>
           <div class="card_floor">Floor: <span id="card_floor_${id}" style="font-weight: normal;">${data.floor}</span></div>
@@ -236,14 +256,14 @@ const connectToSocket = (renderer, map) => {
             users[userID].data = incoming;
             editCard(userID, incoming)
         }
-        // selectedDot = users[userID].data.length-1;
+        // selectedDot = users[userID].historicalData.length-1;
         if (!selectedUser) {
             selectedUser = userID;
         }
-        // slider.max = users[userID].data.length-1;
+        slider.max = users[userID].historicalData.length-1;
         console.log(users)
         current++;
-        
+
         renderer.resetState();
     }
 }
@@ -261,10 +281,10 @@ const slider_forward_btn = document.getElementById("forward_btn")
 
 let isPlaying = false;
 slider.addEventListener("input", (e) => {
-    // selectedDot = e.target.value
+    selectedDot = e.target.value
 })
 slider.addEventListener("change", (e) => {
-    // selectedDot = e.target.value
+    selectedDot = e.target.value
 })
 let timer;
 central_btn.addEventListener("click", () => {

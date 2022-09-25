@@ -48,7 +48,7 @@ body,
 }
 
 .slider {
-    width: 400px;
+    width: 90%;
     margin-bottom: 10px;
 }
 
@@ -145,6 +145,7 @@ body,
     border-radius: 4px;
     cursor: pointer;
     background-color: white;
+    margin-bottom: 10px;
 }
 
 .history_btn:hover {
